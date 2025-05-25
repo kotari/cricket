@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Scorer</title>
+    <style>
+        :root {
+            --primary-bg: #f4f4f4;
+            --secondary-bg: #ffffff;
+            --text-color: #333333;
+            --accent-color: #007bff;
+            --accent-text-color: #ffffff;
+            --border-color: #dddddd;
+            --danger-color: #dc3545;
+            --success-color: #28a745;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        #app {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            max-width: 700px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .section {
+            background-color: var(--secondary-bg);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h2,
+        h3 {
+            color: var(--accent-color);
+            margin-top: 0;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: var(--accent-text-color);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 5px;
+            transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button.control-button {
+            background-color: #6c757d;
+        }
+
+        button.control-button:hover {
+            background-color: #5a6268;
+        }
+
+        button.out-button {
+            background-color: var(--danger-color);
+        }
+
+        button.out-button:hover {
+            background-color: #c82333;
+        }
+
+        button.wide-button {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        button.wide-button:hover {
+            background-color: #e0a800;
+        }
+
+        button.add-button {
+            background-color: #25D366;
+        }
+
+        button.add-button:hover {
+            background-color: #c82333;
+        }
+
+
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            width: calc(100% - 22px);
+            /* Account for padding and border */
+            font-size: 1rem;
+        }
+
+        #breadcrumb-container {
+            font-family: monospace;
+            font-size: 0.9rem;
+            padding: 8px;
+            background-color: var(--secondary-bg);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            text-align: center;
+            white-space: nowrap;
+            overflow-x: auto;
+        }
+
+        #scoring-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        #scoring-buttons button,
+        #control-buttons button {
+            min-height: 44px;
+            /* Touch target size */
+        }
+
+        #control-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .stats-table th {
+            background-color: var(--primary-bg);
+        }
+
+        #score-summary,
+        #current-players {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        #score-summary span,
+        #current-players span {
+            font-weight: bold;
+        }
+
+        #next-inning-button-container {
+            position: sticky;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(244, 244, 244, 0.9);
+            /* Semi-transparent background */
+            padding: 10px 0;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+        }
+
+        #next-inning-button-container button {
+            width: calc(100% - 40px);
+            /* Full width with some padding */
+            max-width: 660px;
+            /* Match app max width */
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            background-color: var(--success-color);
+        }
+
+        #next-inning-button-container button:hover {
+            background-color: #1e7e34;
+        }
+
+        /* Utility classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .striker-highlight {
+            background-color: #e9f5ff;
+        }
+
+        /* Light blue highlight for striker */
+        .nonstriker-highlight {
+            background-color: #f8f9fa;
+        }
+
+        @media (max-width: 400px) {
+            #scoring-buttons {
+                grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            }
+
+            button {
+                padding: 8px 10px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div id="breadcrumb-container">Welcome! Set up the match to begin.</div>
+        <div>
+            <span id="inning-messages"></span>
+        </div>
+
+        <div id="match-setup-section" class="section">
+            <h2>Match Setup</h2>
+            <form id="setup-form">
+                <label for="striker1-name">Opening Batter 1 (Striker):</label>
+                <input type="text" id="striker1-name" required>
+                <label for="striker2-name">Opening Batter 2 (Non-Striker):</label>
+                <input type="text" id="striker2-name" required>
+                <label for="bowler-name">Opening Bowler:</label>
+                <input type="text" id="bowler-name" required>
+                <button type="submit">Start Match</button>
+            </form>
+        </div>
+        <div id="add-batter" class="hidden">
+            <span id="add-batter-msg"></span>
+            <input type="text" id="striker-name" required>
+            <button id="add-batter-button" class="add-button">Add Batter</button>
+        </div>
+        <div id="add-bowler" class="hidden">
+            <span id="add-bowler-msg"></span>
+            <input type="text" id="new-bowler-name" required>
+            <button id="add-bowler-button" class="add-button">Add Bowler</button>
+        </div>
+
+
+        <div id="scoring-section" class="section hidden">
+            <h3>Scoring</h3>
+            <div id="scoring-buttons">
+                <button data-runs="0">0</button>
+                <button data-runs="1">1</button>
+                <button data-runs="2">2</button>
+                <button data-runs="3">3</button>
+                <button data-runs="4">4</button>
+                <button data-runs="5">5</button>
+                <button data-runs="6">6</button>
+            </div>
+            <div id="control-buttons">
+                <button id="wide-button" class="wide-button">WIDE</button>
+                <button id="out-button" class="out-button">OUT</button>
+                <button id="retire-button" class="control-button">RETIRE</button>
+                <button id="change-striker-button" class="control-button">Change Striker</button>
+                <button id="add-one-run-button" class="control-button">Add 1 Run (Total)</button>
+            </div>
+
+
+            <div id="score-summary">
+                Team Score: <span id="team-score">0/0</span> | Overs: <span id="overs-display">0.0</span> | Extras:
+                <span id="extras-display">0.0</span>
+                <span id="target-display" class="hidden" style="margin-left: 10px; color: var(--danger-color);"></span>
+            </div>
+            <div id="current-players">
+                Striker: <span id="current-striker-name" class="bold"></span><br>
+                Non-Striker: <span id="current-non-striker-name"></span><br>
+                Bowler: <span id="current-bowler-name" class="bold"></span>
+            </div>
+
+            <h3>Player Stats</h3>
+            <div id="player-stats-container">
+                <table class="stats-table" id="batting-stats-table">
+                    <thead>
+                        <tr>
+                            <th>Batter</th>
+                            <th>Runs</th>
+                            <th>Balls</th>
+                            <th>4s</th>
+                            <th>6s</th>
+                            <th>SR</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <table class="stats-table" id="bowling-stats-table">
+                    <thead>
+                        <tr>
+                            <th>Bowler</th>
+                            <th>Overs</th>
+                            <th>Mdns</th>
+                            <th>Runs</th>
+                            <th>Wkts</th>
+                            <th>Econ</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button id="whatsapp-share-button" style="margin-top:15px; background-color: #25D366;">Share on
+                WhatsApp</button>
+            <div id="timelines">
+                <div id="batting-timelines">
+                    <table class="stats-table" id="batting-timelines-table">
+                        <thead>
+                            <tr>
+                                <th>Batsman</th>
+                                <th>Runs Detail</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="bowling-timelines">
+                    <table class="stats-table" id="bowling-timelines-table">
+                        <thead>
+                            <tr>
+                                <th>Bowler</th>
+                                <th>Over Details</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div id="next-inning-button-container">
+        <button id="next-inning-button" class="hidden">Start Next Inning</button>
+    </div>
+
+    <script>
+        const MAX_OVERS_PER_INNINGS = 50;
+
+        let matchData = {
+            currentInning: 1,
+            innings1: null,
+            innings2: null,
+            firstInningsTargetRuns: null,
+            matchSetupComplete: false
+        };
+
+        function createInningState() {
+            return {
+                batters: [],
+                bowlers: [],
+                totalRuns: 0,
+                wickets: 0,
+                oversCompleted: 0,
+                ballsInCurrentOver: 0,
+                extras: 0,
+                ballEventsCurrentOver: [],
+                completedOversHistory: [],
+                strikerName: null,
+                nonStrikerName: null,
+                currentBowlerName: null,
+                isCompleted: false
+            };
+        }
+
+        const setupForm = document.getElementById('setup-form');
+        const matchSetupSection = document.getElementById('match-setup-section');
+        const scoringSection = document.getElementById('scoring-section');
+        const nextInningButton = document.getElementById('next-inning-button');
+        const breadcrumbContainer = document.getElementById('breadcrumb-container');
+        const targetDisplayEl = document.getElementById('target-display');
+        const addBatterSection = document.getElementById('add-batter');
+        const addBatterMsg = document.getElementById('add-batter-msg');
+        const addBowlerSection = document.getElementById('add-bowler');
+        const addBowlerMsg = document.getElementById('add-bowler-msg');
+        const scoringButtons = document.getElementById('scoring-buttons');
+        const controlButtons = document.getElementById('control-buttons');
+        const inningsMsg = document.getElementById('inning-messages');
+
+
+        const teamScoreEl = document.getElementById('team-score');
+        const oversDisplayEl = document.getElementById('overs-display');
+        const extrasDisplayEl = document.getElementById('extras-display');
+        const currentStrikerNameEl = document.getElementById('current-striker-name');
+        const currentNonStrikerNameEl = document.getElementById('current-non-striker-name');
+        const currentBowlerNameEl = document.getElementById('current-bowler-name');
+        const battingStatsTableBody = document.getElementById('batting-stats-table').getElementsByTagName('tbody')[0];
+        const bowlingStatsTableBody = document.getElementById('bowling-stats-table').getElementsByTagName('tbody')[0];
+        const bowlingTimelinesTableBody = document.getElementById('bowling-timelines-table').getElementsByTagName('tbody')[0];
+        const battingTimelinesTableBody = document.getElementById('batting-timelines-table').getElementsByTagName('tbody')[0];
+
+        function saveState() {
+            localStorage.setItem('cricketMatchState', JSON.stringify(matchData));
+        }
+
+        function loadState() {
+            const savedState = localStorage.getItem('cricketMatchState');
+            if (savedState) {
+                matchData = JSON.parse(savedState);
+                if (matchData.matchSetupComplete) {
+                    matchSetupSection.classList.add('hidden');
+                    scoringSection.classList.remove('hidden');
+                    nextInningButton.classList.remove('hidden');
+                    if (matchData.currentInning === 2 && matchData.innings2 && matchData.innings2.isCompleted) {
+                        nextInningButton.textContent = "Start New Match";
+                    } else if (matchData.currentInning === 1 && matchData.innings1 && matchData.innings1.isCompleted) {
+                        nextInningButton.textContent = "Start Next Inning";
+                    } else if (matchData.currentInning === 2) {
+                        nextInningButton.textContent = "End Match & Reset";
+                    }
+                }
+            } else {
+                matchData.innings1 = createInningState();
+                matchData.innings2 = createInningState();
+            }
+            if (!matchData.innings1) matchData.innings1 = createInningState();
+            if (!matchData.innings2) matchData.innings2 = createInningState();
+
+            updateUI();
+        }
+
+        function findOrCreateBatter(name, inningData) {
+            let batter = inningData.batters.find(b => b.name === name);
+            if (!batter) {
+                batter = { name, runs: 0, balls: 0, fours: 0, sixes: 0, isOut: false, isRetired: false, order: inningData.batters.length, timeline: [] };
+                inningData.batters.push(batter);
+            } else {
+                batter.isRetired = false;
+            }
+            return batter;
+        }
+
+        function findOrCreateBowler(name, inningData) {
+            let bowler = inningData.bowlers.find(b => b.name === name);
+            if (!bowler) {
+                bowler = { name, ballsBowled: 0, runsConceded: 0, wickets: 0, maidens: 0, runsInCurrentOverSpell: 0, extras: 0, timeline: [], oversBowled: [] };
+                inningData.bowlers.push(bowler);
+            }
+            return bowler;
+        }
+
+        setupForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const striker1Name = document.getElementById('striker1-name').value.trim();
+            const striker2Name = document.getElementById('striker2-name').value.trim();
+            const bowlerName = document.getElementById('bowler-name').value.trim();
+
+            if (!striker1Name || !striker2Name || !bowlerName) {
+                // alert("All fields are required for setup.");
+                return;
+            }
+            if (striker1Name === striker2Name) {
+                // alert("Striker and Non-Striker must have different names.");
+                return;
+            }
+
+            const currentInningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
+
+            currentInningData.batters = [];
+            currentInningData.bowlers = [];
+
+            findOrCreateBatter(striker1Name, currentInningData);
+            findOrCreateBatter(striker2Name, currentInningData);
+            findOrCreateBowler(bowlerName, currentInningData);
+
+            currentInningData.strikerName = striker1Name;
+            currentInningData.nonStrikerName = striker2Name;
+            currentInningData.currentBowlerName = bowlerName;
+
+            matchData.matchSetupComplete = true;
+            matchSetupSection.classList.add('hidden');
+            scoringSection.classList.remove('hidden');
+            nextInningButton.classList.remove('hidden');
+            if (matchData.currentInning === 1) {
+                nextInningButton.textContent = "Start Next Inning";
+            } else {
+                nextInningButton.textContent = "End Match & Reset";
+            }
+
+            updateUI();
+            saveState();
+        });
+
+        function updateUI() {
+            if (!matchData.matchSetupComplete) {
+                breadcrumbContainer.textContent = "Match not set up.";
+                targetDisplayEl.classList.add('hidden');
+                return;
+            }
+
+            const inningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
+            if (!inningData || !inningData.strikerName) {
+                breadcrumbContainer.textContent = `Inning ${matchData.currentInning} not started.`;
+                if (matchData.currentInning === 2 && !matchData.innings2.strikerName) {
+                    matchSetupSection.classList.remove('hidden');
+                    scoringSection.classList.add('hidden');
+                    document.getElementById('setup-form').reset();
+                    document.getElementById('striker1-name').focus();
+                    if (matchData.firstInningsTargetRuns !== null) {
+                        breadcrumbContainer.textContent = `Innings 1 Score: ${matchData.firstInningsTargetRuns}. Target: ${matchData.firstInningsTargetRuns + 1}. Set up Innings 2.`;
+                        targetDisplayEl.textContent = `Target: ${matchData.firstInningsTargetRuns + 1}`;
+                        targetDisplayEl.classList.remove('hidden');
+                    } else {
+                        breadcrumbContainer.textContent = "Set up Innings 2.";
+                        targetDisplayEl.classList.add('hidden');
+                    }
+                } else {
+                    targetDisplayEl.classList.add('hidden');
+                }
+                return;
+            }
+
+            if (matchData.currentInning === 2 && matchData.firstInningsTargetRuns !== null) {
+                targetDisplayEl.textContent = `Target: ${matchData.firstInningsTargetRuns + 1}`;
+                targetDisplayEl.classList.remove('hidden');
+            } else {
+                targetDisplayEl.classList.add('hidden');
+            }
+
+
+            teamScoreEl.textContent = `${inningData.totalRuns}/${inningData.wickets}`;
+            oversDisplayEl.textContent = `${inningData.oversCompleted}.${inningData.ballsInCurrentOver}`;
+            extrasDisplayEl.textContent = `${inningData.extras}`;
+
+            currentStrikerNameEl.textContent = inningData.strikerName || "N/A";
+            currentNonStrikerNameEl.textContent = inningData.nonStrikerName || "N/A";
+            currentBowlerNameEl.textContent = inningData.currentBowlerName || "N/A";
+
+            battingStatsTableBody.innerHTML = '';
+            battingTimelinesTableBody.innerHTML = '';
+            inningData.batters.forEach(batter => {
+                const row = battingStatsTableBody.insertRow();
+                row.insertCell().textContent = batter.name;
+                row.insertCell().textContent = batter.runs;
+                row.insertCell().textContent = batter.balls;
+                row.insertCell().textContent = batter.fours;
+                row.insertCell().textContent = batter.sixes;
+                const sr = batter.balls > 0 ? ((batter.runs / batter.balls) * 100).toFixed(2) : "0.00";
+                row.insertCell().textContent = sr;
+                let status = batter.name === inningData.strikerName ? "Striker" : (batter.name === inningData.nonStrikerName ? "Non-Striker" : "Batted");
+                if (batter.isOut) status = "Out";
+                if (batter.isRetired) status = "Retired";
+                row.insertCell().textContent = status;
+
+                if (batter.name === inningData.strikerName) row.classList.add('striker-highlight');
+                if (batter.name === inningData.nonStrikerName && !batter.isOut && !batter.isRetired) row.classList.add('nonstriker-highlight');
+                battingRow = battingTimelinesTableBody.insertRow();
+                battingRow.insertCell().textContent = batter.name;
+                battingRow.insertCell().textContent = batter.timeline.join(" • ");
+            });
+
+            bowlingStatsTableBody.innerHTML = '';
+            bowlingTimelinesTableBody.innerHTML = '';
+            inningData.bowlers.forEach(bowler => {
+                const row = bowlingStatsTableBody.insertRow();
+                const oversBowledFull = Math.floor(bowler.ballsBowled / 6);
+                const ballsInCurrentBowlerOver = bowler.ballsBowled % 6;
+                row.insertCell().textContent = bowler.name;
+                row.insertCell().textContent = `${oversBowledFull}.${ballsInCurrentBowlerOver}`;
+                row.insertCell().textContent = bowler.maidens;
+                row.insertCell().textContent = bowler.runsConceded;
+                row.insertCell().textContent = bowler.wickets;
+                const totalOversForEcon = oversBowledFull + (ballsInCurrentBowlerOver / 6);
+                const econ = totalOversForEcon > 0 ? (bowler.runsConceded / totalOversForEcon).toFixed(2) : "0.00";
+                row.insertCell().textContent = econ;
+                for (let i = 0; i < bowler.timeline.length; i++) {
+                    bowlingRow = bowlingTimelinesTableBody.insertRow();
+                    bowlingRow.insertCell().textContent = bowler.name + " (" + bowler.oversBowled[i] + ")";
+                    bowlingRow.insertCell().textContent = bowler.timeline[i].join(" • ")
+                    // bowlerTimelines += bowler.name + ": " + bowler.timeline[i].join("-") + "<br/>";
+                }
+            });
+            // document.getElementById("bowling-timelines").textContent = bowlerTimelines;
+
+
+            let breadcrumbStr = "";
+            if (inningData.completedOversHistory.length > 0) {
+                if (inningData.completedOversHistory.length > 1) {
+                    breadcrumbStr += `• ${inningData.completedOversHistory[1].join(' • ')} • | `;
+                }
+                breadcrumbStr += `• ${inningData.completedOversHistory[0].join(' • ')} •`;
+            }
+            if (inningData.ballEventsCurrentOver.length > 0) {
+                if (breadcrumbStr) breadcrumbStr += " | ";
+                breadcrumbStr += `Current: ${inningData.ballEventsCurrentOver.join(' • ')}`;
+            }
+            if (!breadcrumbStr && inningData.oversCompleted === 0 && inningData.ballsInCurrentOver === 0) {
+                breadcrumbStr = "First ball of the innings.";
+            } else if (!breadcrumbStr) {
+                breadcrumbStr = "Waiting for first ball of over.";
+            }
+            breadcrumbContainer.innerHTML = breadcrumbStr;
+
+
+            checkInningsEnd();
+        }
+
+        function checkInningsEnd() {
+            const inningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
+            let conditionsMet = inningData.wickets >= 10 || inningData.oversCompleted >= MAX_OVERS_PER_INNINGS;
+
+            if (matchData.currentInning === 2 && matchData.firstInningsTargetRuns !== null && inningData.totalRuns > matchData.firstInningsTargetRuns) {
+                conditionsMet = true;
+            }
+
+            if (conditionsMet && !inningData.isCompleted) { // Check !inningData.isCompleted to run end-of-innings logic only once
+                inningData.isCompleted = true;
+                document.querySelectorAll('#scoring-buttons button, #control-buttons button').forEach(b => b.disabled = true);
+                if (matchData.currentInning === 1) {
+                    nextInningButton.textContent = "Start Next Inning";
+                } else {
+                    nextInningButton.textContent = "Start New Match";
+                    if (inningData.totalRuns > matchData.firstInningsTargetRuns) {
+                        inningsMsg.innerText = "Match Completed! Team 2 Wins!";
+                    } else if (inningData.totalRuns === matchData.firstInningsTargetRuns && inningData.wickets < 10 && inningData.oversCompleted >= MAX_OVERS_PER_INNINGS) { // Tie if scores level and 2nd innings overs complete or all out
+                        inningsMsg.innerText = "Match Completed! It's a Tie!";
+                    } else if (inningData.totalRuns === matchData.firstInningsTargetRuns && inningData.wickets === 10) { // Tie if scores level and 2nd innings all out
+                        inningsMsg.innerText = "Match Completed! It's a Tie!";
+                    }
+                    else {
+                        inningsMsg.innerText = "Match Completed! Team 1 Wins!";
+                    }
+                }
+            } else if (!inningData.isCompleted) {
+                document.querySelectorAll('#scoring-buttons button, #control-buttons button').forEach(b => b.disabled = false);
+            }
+        }
+
+        function processBall(runs, eventSymbol, isLegalDelivery = true, isWide = false, isOut = false) {
+            const inningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
+
+            if (inningData.isCompleted) { // Prevent scoring if innings already marked complete
+                inningsMsg.innerText = "This innings is complete. Cannot score further.";
+                return;
+            }
+
+            const striker = findOrCreateBatter(inningData.strikerName, inningData);
+            const bowler = findOrCreateBowler(inningData.currentBowlerName, inningData);
+
+            inningData.totalRuns += runs;
+            if (!isWide) {
+                striker.runs += runs;
+                striker.timeline.push(runs)
+                if (runs === 4) striker.fours++;
+                if (runs === 6) striker.sixes++;
+            } else {
+                inningData.extras += runs;
+            }
+            bowler.runsConceded += runs;
+            bowler.runsInCurrentOverSpell += runs;
+
+            inningData.ballEventsCurrentOver.push(eventSymbol);
+
+            if (isLegalDelivery) {
+                inningData.ballsInCurrentOver++;
+                striker.balls++;
+                bowler.ballsBowled++;
+
+                if (isOut) {
+                    striker.isOut = true;
+                    inningData.wickets++;
+                    bowler.wickets++;
+                }
+
+                if (runs % 2 !== 0 && runs > 0 && runs < 7 && !isOut) {
+                    const temp = inningData.strikerName;
+                    inningData.strikerName = inningData.nonStrikerName;
+                    inningData.nonStrikerName = temp;
+                }
+
+                if (inningData.ballsInCurrentOver === 6) {
+                    inningData.oversCompleted++;
+                    inningData.ballsInCurrentOver = 0;
+
+                    inningData.completedOversHistory.unshift([...inningData.ballEventsCurrentOver]);
+                    bowler.timeline.push(inningData.ballEventsCurrentOver);
+                    bowler.oversBowled.push(inningData.oversCompleted);
+                    if (inningData.completedOversHistory.length > 2) inningData.completedOversHistory.pop();
+                    inningData.ballEventsCurrentOver = [];
+
+                    if (bowler.runsInCurrentOverSpell === 0 && isLegalDelivery) { // Maiden over if 0 runs from legal deliveries
+                        bowler.maidens++;
+                    }
+                    bowler.runsInCurrentOverSpell = 0;
+
+                    if (!isOut) {
+                        const temp = inningData.strikerName;
+                        inningData.strikerName = inningData.nonStrikerName;
+                        inningData.nonStrikerName = temp;
+                    }
+
+                    // Ask for new bowler after over completion, only if innings not already complete
+                    if (!inningData.isCompleted && inningData.wickets < 10 && inningData.oversCompleted < MAX_OVERS_PER_INNINGS) {
+                        const bowlerWhoCompletedOver = inningData.currentBowlerName;
+                        const msg = `Over ${inningData.oversCompleted} completed by ${bowlerWhoCompletedOver}. Enter next bowler's name:`
+                        addBowlerMsg.innerText = msg;
+                        addBowlerSection.classList.remove('hidden');
+                        scoringButtons.classList.add('hidden');
+                        controlButtons.classList.add('hidden');
+                    }
+                }
+            }
+
+            if (isOut && inningData.wickets < 10) {
+                const msg = `Batter ${striker.name} is OUT. Enter name of next batter (will be striker):`;
+                addBatterMsg.innerText = msg;
+                addBatterSection.classList.remove('hidden');
+                scoringButtons.classList.add('hidden');
+                controlButtons.classList.add('hidden');
+                document.querySelectorAll('#scoring-section button').forEach(b => b.disabled = true);
+            }
+
+            updateUI(); // This will also call checkInningsEnd
+            saveState();
+        }
+
+
+        document.getElementById('add-bowler-button').addEventListener('click', (e) => {
+            const bowlerName = document.getElementById('new-bowler-name').value.trim();
+            const inningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
+            if (bowlerName !== "") {
+                document.getElementById("new-bowler-name").value = "";
+                inningData.currentBowlerName = bowlerName;
+                findOrCreateBowler(bowlerName, inningData);
+                addBowlerSection.classList.add('hidden');
+                scoringButtons.classList.remove('hidden');
+                controlButtons.classList.remove('hidden');
+                updateUI();
+                saveState();
+            }
+        });
+
+        document.getElementById('add-batter-button').addEventListener('click', (e) => {
+            const strikerName = document.getElementById('striker-name').value.trim();
+            const inningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
+            if (strikerName && strikerName.trim() !== "") {
+                striker = findOrCreateBatter(strikerName.trim(), inningData);
+                console.log(striker);
+                if (striker.isOut || inningData.nonStrikerName === strikerName) {
+                    const msg = `Batter ${striker.name} is OUT or non striker. Enter name of next batter (will be striker):`;
+                    addBatterMsg.innerText = msg;
+                    return
+                }
+                inningData.strikerName = strikerName.trim();
+                document.getElementById("striker-name").value = "";
+                addBatterSection.classList.add('hidden');
+                scoringButtons.classList.remove('hidden');
+                controlButtons.classList.remove('hidden');
+                updateUI();
+                saveState();
+            }
+        });
+
+        document.getElementById('scoring-buttons').addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON' && e.target.dataset.runs) {
+                const runs = parseInt(e.target.dataset.runs);
+                processBall(runs, String(runs));
+            }
+        });
+
+        document.getElementById('wide-button').addEventListener('click', () => {
+            const inningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
+            if (inningData.isCompleted) { inningsMsg.innerText = "This innings is complete."; return; }
+
+            const bowler = findOrCreateBowler(inningData.currentBowlerName, inningData);
+
+            inningData.totalRuns += 1;
+            inningData.extras += 1;
+            bowler.runsConceded += 1;
+            bowler.runsInCurrentOverSpell += 1;
+
+            inningData.ballEventsCurrentOver.push('Wd');
+            updateUI();
+            saveState();
+        });
+
+        document.getElementById('out-button').addEventListener('click', () => {
+            processBall(0, 'W', true, false, true);
+        });
+
+        document.getElementById('retire-button').addEventListener('click', () => {
+            const inningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
+            if (inningData.isCompleted) { inningsMsg.innerText = "This innings is complete."; return; }
+
+            const striker = findOrCreateBatter(inningData.strikerName, inningData);
+            striker.isRetired = true;
+
+            const msg = `Batter ${striker.name} is retiring. Enter name of next batter (will be striker):`;
+            addBatterMsg.innerText = msg;
+            addBatterSection.classList.remove('hidden');
+            inningData.ballEventsCurrentOver.push('Ret');
+            updateUI();
+            saveState();
+        });
+
+        document.getElementById('change-striker-button').addEventListener('click', () => {
+            const inningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
+            if (inningData.isCompleted) { inningsMsg.innerText = "This innings is complete."; return; }
+
+            const temp = inningData.strikerName;
+            inningData.strikerName = inningData.nonStrikerName;
+            inningData.nonStrikerName = temp;
+            updateUI();
+            saveState();
+        });
+
+        document.getElementById('add-one-run-button').addEventListener('click', () => {
+            const inningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
+            if (inningData.isCompleted) { inningsMsg.innerText = "This innings is complete."; return; }
+            inningData.totalRuns += 1;
+            inningData.extras += 1;
+            updateUI();
+            saveState();
+        });
+
+        nextInningButton.addEventListener('click', () => {
+            const currentInningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
+
+            if (nextInningButton.textContent === "Start New Match") {
+                localStorage.removeItem('cricketMatchState');
+                window.location.reload();
+                return;
+            }
+
+            // Mark current innings as completed if not already (e.g. if "Start Next Inning" is pressed early)
+            if (!currentInningData.isCompleted) {
+                currentInningData.isCompleted = true;
+                // Disable scoring buttons for the just-completed innings
+                document.querySelectorAll('#scoring-section button').forEach(b => b.disabled = true);
+            }
+
+
+            if (matchData.currentInning === 1) {
+                matchData.firstInningsTargetRuns = currentInningData.totalRuns;
+                matchData.currentInning = 2;
+                matchData.innings2 = createInningState();
+                matchData.matchSetupComplete = false;
+                addBowlerSection.classList.add('hidden');
+                addBatterSection.classList.add('hidden');
+                scoringButtons.classList.remove('hidden');
+                controlButtons.classList.remove('hidden');
+                document.getElementById('setup-form').reset();
+                matchSetupSection.classList.remove('hidden');
+                scoringSection.classList.add('hidden');
+                nextInningButton.textContent = "End Match & Reset"; // Or "Start 2nd Inning" until setup
+                breadcrumbContainer.textContent = `Innings 1 Score: ${matchData.firstInningsTargetRuns}. Target: ${matchData.firstInningsTargetRuns + 1}. Set up Innings 2.`;
+                targetDisplayEl.textContent = `Target: ${matchData.firstInningsTargetRuns + 1}`;
+                targetDisplayEl.classList.remove('hidden');
+                // Re-enable scoring buttons for the new innings setup
+                document.querySelectorAll('#scoring-section button').forEach(b => b.disabled = false);
+
+
+            } else {
+                inningsMsg.innerText = "Match Finished!";
+                nextInningButton.textContent = "Start New Match";
+                document.querySelectorAll('#scoring-section button').forEach(b => b.disabled = true);
+
+            }
+            updateUI(); // This will show setup for Innings 2 or reflect final state
+            saveState();
+        });
+
+        document.getElementById('whatsapp-share-button').addEventListener('click', () => {
+            const inningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
+            let scoreText = `Current Score: ${inningData.totalRuns}/${inningData.wickets} after ${inningData.oversCompleted}.${inningData.ballsInCurrentOver} ov. (Inning ${matchData.currentInning})`;
+            if (matchData.currentInning === 2 && matchData.firstInningsTargetRuns !== null) {
+                scoreText += ` Chasing ${matchData.firstInningsTargetRuns + 1}.`;
+            }
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(scoreText)}`;
+            window.open(whatsappUrl, '_blank');
+        });
+
+        loadState();
+
+    </script>
+</body>
+
+</html>
