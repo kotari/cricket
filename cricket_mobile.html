@@ -135,10 +135,12 @@
         }
 
         #scoring-buttons button,
-        #control-buttons button {
+        #control-buttons button,
+        #scoring-buttons input[type=checkbox] {
             min-height: 44px;
             /* Touch target size */
         }
+
 
         #control-buttons {
             display: grid;
@@ -269,6 +271,9 @@
         <div id="scoring-section" class="section hidden">
             <h3>Scoring</h3>
             <div id="scoring-buttons">
+                <label>No Ball
+                    <input type="checkbox" id="no-ball" />
+                </label>
                 <button data-runs="0">0</button>
                 <button data-runs="1">1</button>
                 <button data-runs="2">2</button>
@@ -402,6 +407,7 @@
         const scoringButtons = document.getElementById('scoring-buttons');
         const controlButtons = document.getElementById('control-buttons');
         const inningsMsg = document.getElementById('inning-messages');
+        const noBallCheckbox = document.getElementById("no-ball")
 
 
         const teamScoreEl = document.getElementById('team-score');
@@ -652,7 +658,7 @@
             }
         }
 
-        function processBall(runs, eventSymbol, isLegalDelivery = true, isWide = false, isOut = false) {
+        function processBall(runs, eventSymbol, isLegalDelivery = true, isWide = false, isOut = false, isNoBall = false) {
             const inningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
 
             if (inningData.isCompleted) { // Prevent scoring if innings already marked complete
@@ -666,7 +672,13 @@
             inningData.totalRuns += runs;
             if (!isWide) {
                 striker.runs += runs;
-                striker.timeline.push(runs)
+                if (isNoBall) {
+                    strikerDisplayRuns = runs + "NB";
+                    eventSymbol = eventSymbol + "NB";
+                } else {
+                    strikerDisplayRuns = runs;
+                }
+                striker.timeline.push(strikerDisplayRuns)
                 if (runs === 4) striker.fours++;
                 if (runs === 6) striker.sixes++;
             } else {
@@ -678,9 +690,11 @@
             inningData.ballEventsCurrentOver.push(eventSymbol);
 
             if (isLegalDelivery) {
-                inningData.ballsInCurrentOver++;
-                striker.balls++;
-                bowler.ballsBowled++;
+                if (!isNoBall) {
+                    inningData.ballsInCurrentOver++;
+                    striker.balls++;
+                    bowler.ballsBowled++;
+                }
 
                 if (isOut) {
                     striker.isOut = true;
@@ -761,7 +775,6 @@
             const inningData = matchData.currentInning === 1 ? matchData.innings1 : matchData.innings2;
             if (strikerName && strikerName.trim() !== "") {
                 striker = findOrCreateBatter(strikerName.trim(), inningData);
-                console.log(striker);
                 if (striker.isOut || inningData.nonStrikerName === strikerName) {
                     const msg = `Batter ${striker.name} is OUT or non striker. Enter name of next batter (will be striker):`;
                     addBatterMsg.innerText = msg;
@@ -780,7 +793,10 @@
         document.getElementById('scoring-buttons').addEventListener('click', (e) => {
             if (e.target.tagName === 'BUTTON' && e.target.dataset.runs) {
                 const runs = parseInt(e.target.dataset.runs);
-                processBall(runs, String(runs));
+                isNoBall = noBallCheckbox.checked;
+                processBall(runs, String(runs), true, false, false, isNoBall);
+                noBallCheckbox.checked = false;
+
             }
         });
 
@@ -801,7 +817,7 @@
         });
 
         document.getElementById('out-button').addEventListener('click', () => {
-            processBall(0, 'W', true, false, true);
+            processBall(0, 'W', true, false, true, false);
         });
 
         document.getElementById('retire-button').addEventListener('click', () => {
